@@ -1,10 +1,15 @@
-import matplotlib.pyplot as plt
+import numpy as np
 import image_processing as ip
 
-source, target = ip.image_data_extraction("./Images/cat.png", "./Images/robin.png")
+source_path = "./Images/cat.png"
 
-sourcefig = ip.visualize_data(source[0], source[1], source[2])
-targetfig = ip.visualize_data(target[0], target[1], target[2])
+data = ip.image_data_extraction(source_path)
+data_2 = np.array(data.tolist(), dtype=object)
 
-sourcefig = plt.show()
-targetfig = plt.show()
+# visualizing data
+ip.hsv_print(source_path)
+
+ip.visualize_data(
+    hue_channel=data_2[:, :, 2].astype(np.uint8), 
+    saturation_channel=data_2[:, :, 3].astype(np.uint8), 
+    value_channel=data_2[:, :, 4].astype(np.uint8))
