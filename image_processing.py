@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def hsv_print(path):
-        image = cv2.cvtColor(cv2.imread(path) ,cv2.COLOR_BGR2HSV_FULL)
-        cv2.imshow('hsv image',image)
-        cv2.waitKey(0)
+    image = cv2.cvtColor(cv2.imread(path) ,cv2.COLOR_BGR2HSV_FULL)
+    cv2.imshow('hsv image',image)
+    cv2.waitKey(0)
 
 def visualize_data(hue_channel, saturation_channel, value_channel):
     # create the figure and adjust layout
@@ -44,43 +44,35 @@ def image_data_extraction(path: str):
             data[y, x, 3] = image[y, x][1]  # Store saturation value 
             data[y, x, 4] = image[y, x][2]  # Store value value 
 
+    data = np.array(data.tolist(), dtype=object)
+
     return data
 
-# sort all data by value channel 
-def merge_sort(original):
-    arr = original
-    if len(arr) > 1:
-        # array from index 0 to len(arr) / 2
-        leftarr = arr[:len(arr)//2]
-        # from len(arr) to end of arr
-        rightarr = arr[len(arr)//2:]
+# analyse image in chunks to do less operations
+def chunk_analysis(image_data, image_path):
 
-        # recursion
-        merge_sort(leftarr)
-        merge_sort(rightarr)
+    image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2HSV_FULL)
 
-        # merging array
-        i = 0 # index of left
-        j = 0 # index of right
-        k = 0 # index of merged
+    x = image.shape[1] - (image.shape[1] % 3)
+    y = image.shape[0] - (image.shape[0] % 3)
+    print("size:", x,y)
+    data = np.empty((int(y/3), int(x/3), 5), dtype=np.uint8)
+    
+    # iterate through the center of every 3x3 chung available and store the val
+    # of that center pixel into out data array
+    index_y = 0
+    index_x = 0
+    for i in range(1, y, 3):
+        print("iterate y", i, index_y)
+        for j in range(1, x, 3):
+            print("iterate x", j, index_x)
+            data[index_y, index_x, 0] = i  # Store x coordinate
+            data[index_y, index_x, 1] = j  # Store y coordinate
+            data[index_y, index_x, 2] = image_data[i, j][0]  # Store hue value 
+            data[index_y, index_x, 3] = image_data[i, j][1]  # Store saturation value 
+            data[index_y, index_x, 4] = image_data[i, j][2]  # Store value value 
+            index_x += 1
+        index_x = 0
+        index_y += 1
 
-        while (i < len(leftarr) and j < len(rightarr)):
-            if leftarr[i] < rightarr[j]:
-                arr[k] = leftarr[i]
-                i += 1
-            else:
-                arr[k] = rightarr[j]
-                j += 1
-            k += 1
-        
-        while (i < len(leftarr)):
-            arr[k] = leftarr[i]
-            i += 1 
-            k += 1
-
-        while (j< len(rightarr)):
-            arr[k] = rightarr[j]
-            j += 1
-            k += 1
-
-    return arr
+    print(data)
