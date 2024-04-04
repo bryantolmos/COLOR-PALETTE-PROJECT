@@ -50,12 +50,11 @@ def image_data_extraction(path: str):
 
 # analyse image in chunks to do less operations
 def chunk_analysis(image_data, image_path):
-
     image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2HSV_FULL)
 
     x = image.shape[1] - (image.shape[1] % 3)
     y = image.shape[0] - (image.shape[0] % 3)
-    print("size:", x,y)
+    
     data = np.empty((int(y/3), int(x/3), 5), dtype=np.uint8)
     
     # iterate through the center of every 3x3 chung available and store the val
@@ -63,9 +62,7 @@ def chunk_analysis(image_data, image_path):
     index_y = 0
     index_x = 0
     for i in range(1, y, 3):
-        print("iterate y", i, index_y)
         for j in range(1, x, 3):
-            print("iterate x", j, index_x)
             data[index_y, index_x, 0] = i  # Store x coordinate
             data[index_y, index_x, 1] = j  # Store y coordinate
             data[index_y, index_x, 2] = image_data[i, j][0]  # Store hue value 
@@ -75,4 +72,4 @@ def chunk_analysis(image_data, image_path):
         index_x = 0
         index_y += 1
 
-    print(data)
+    return data
