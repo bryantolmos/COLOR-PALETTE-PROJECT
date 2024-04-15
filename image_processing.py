@@ -42,9 +42,7 @@ def image_data_extraction(path: str):
             data[y, x, 1] = y  # Store y coordinate
             data[y, x, 2] = image[y, x][0]  # Store hue value 
             data[y, x, 3] = image[y, x][1]  # Store saturation value 
-            data[y, x, 4] = image[y, x][2]  # Store value value 
-
-    data = np.array(data.tolist(), dtype=object)
+            data[y, x, 4] = image[y, x][2]  # Store value value     
 
     return data
 
