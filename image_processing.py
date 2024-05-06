@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
 
 def hsv_print(path):
     image = cv2.cvtColor(cv2.imread(path) ,cv2.COLOR_BGR2HSV_FULL)
@@ -33,33 +34,58 @@ def image_data_extraction(path: str):
     height, width = image.shape[:2]
         
     # empty numpy array to store pixel data (HSV)
-    data = np.empty((height, width, 5), dtype=np.uint8)
+    data = np.empty((width, height, 5), dtype=np.uint8)
     
-    for y in range(height):
-        for x in range(width):
+    for x in range(width):
+        for y in range(height):
             # accessing and storing hsv image data
-            data[y, x, 0] = x  # Store x coordinate
-            data[y, x, 1] = y  # Store y coordinate
-            data[y, x, 2] = image[y, x][0]  # Store hue value 
-            data[y, x, 3] = image[y, x][1]  # Store saturation value 
-            data[y, x, 4] = image[y, x][2]  # Store value value     
+            data[x, y, 0] = x  # Store x coordinate
+            data[x, y, 1] = y  # Store y coordinate
+            data[x, y, 2] = image[x, y][0]  # Store hue value 
+            data[x, y, 3] = image[x, y][1]  # Store saturation value 
+            data[x, y, 4] = image[x, y][2]  # Store value value     
 
     return data
 
+# identify recurring HSV values
+def recurring_identify(data, data_channel):
+# initializing dict
+    dictionary = {}
+    for i in range(0,256):
+        dictionary[i] = 0
+
+    for x in range(len(data[0])): # length
+        for y in range(len(data[1])): # height
+            dictionary[data[x,y][data_channel]] += 1
+
+    # remove all zero values
+    non_zero_dict = {key: value for key, value in dictionary.items() if value != 0}
+
+    # overwrite data
+    non_zero_dict = dict(sorted(non_zero_dict.items(), key=lambda item: item[1], reverse=True))
+
+    return non_zero_dict
+
+
+
+
+# lowkey dont know why i need this, but still kinda cool 
 # analyse image in chunks to do less operations
 def chunk_analysis(image_data, image_path):
     image = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2HSV_FULL)
 
-    x = image.shape[1] - (image.shape[1] % 3)
-    y = image.shape[0] - (image.shape[0] % 3)
+    size = 3
+
+    x = image.shape[1] - (image.shape[1] % size)
+    y = image.shape[0] - (image.shape[0] % size)
     
-    data = np.empty((int(y/3), int(x/3), 5), dtype=np.uint8)
+    data = np.empty((int(y/size), int(x/size), 5), dtype=np.uint8)
     
     # iterate through the center of every 3x3 chung available and store the val
     # of that center pixel into out data array
     index_y = 0
     index_x = 0
-    for i in range(1, y, 3):
+    for i in range(1, y, size):
         for j in range(1, x, 3):
             data[index_y, index_x, 0] = i  # Store x coordinate
             data[index_y, index_x, 1] = j  # Store y coordinate
