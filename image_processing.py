@@ -11,78 +11,85 @@ import matplotlib.pyplot as plt
 def image_data_extraction(path: str):
     # reading images -> converting to HSV colorspace
     image = cv2.cvtColor(cv2.imread(path) ,cv2.COLOR_BGR2HSV_FULL)
-
-    # get image height and width
-    height, width = image.shape[:2]
         
-    # empty numpy array to store pixel data (HSV)
-    data = np.empty((width, height, 5), dtype=np.uint8)
-    
-    for x in range(width):
-        for y in range(height):
-            # accessing and storing hsv image data
-            data[x, y, 0] = x  # Store x coordinate
-            data[x, y, 1] = y  # Store y coordinate
-            data[x, y, 2] = image[x, y][0]  # Store hue value 
-            data[x, y, 3] = image[x, y][1]  # Store saturation value 
-            data[x, y, 4] = image[x, y][2]  # Store value value     
+   # vectorized extraction
+    data = np.dstack((image[..., 0], image[..., 1], image[..., 2]))   
 
-    return data
+    return data.astype(np.uint8)
 
 # identify recurring HSV values
 def recurring_identify(data, data_channel):
-# initializing dict
-    dictionary = {}
-    for i in range(0,256):
-        dictionary[i] = 0
+    # count occurances of each value in data channel chosen
+    channel_counts = np.bincount(data[:, :, data_channel].flatten())
 
-    for x in range(len(data[0])): # length
-        for y in range(len(data[1])): # height
-            dictionary[data[x,y][data_channel]] += 1
+    # This part of the code is commented out but can be useful
+    # it returns a sorted dictionary in descending order where
+    # the keys are the data_channel values and the values of 
+    # the dictionary are the number of occurences
+    #----------------------------------#
+    # create a dictionary from the counts without zeros
+    #non_zero_dict = {i: count for i, count in enumerate(channel_counts) if count > 0}
 
-    # remove all zero values
-    non_zero_dict = {key: value for key, value in dictionary.items() if value != 0}
-
-    # overwrite data
-    non_zero_dict = dict(sorted(non_zero_dict.items(), key=lambda item: item[1], reverse=True))
-
-    return non_zero_dict
-
-def image_data_swap(path: str, source_dict, target_dict, target_image_data, data_channel):
-    # reading images -> converting to HSV colorspace
-    target_image = cv2.cvtColor(cv2.imread(path) ,cv2.COLOR_BGR2HSV_FULL)
-
-    # get image height and width
-    height, width = target_image.shape[:2]
-
-
-    # start color swap
-
+    # sort dictionary by descenting order
+    #sorted_dict = dict(sorted(non_zero_dict.items(), key=lambda item: item[1], reverse=True))
     
-    # convert dictionary keys to lists
-    keys_list1 = list(source_dict)
-    keys_list2 = list(target_dict)
+    #return sorted_dict
+    #----------------------------------#
 
-    # extend keys_list1 with additional keys from keys_list2
-    if (len(keys_list1) < len(keys_list2)):
-        keys_list1.extend(keys_list2[len(source_dict):])
+    # get indices of non zero counts
+    non_zero_indices = np.nonzero(channel_counts)[0]
 
-    # create a mapping dictionary
-    mapping = {}
-    for key, value in zip(target_dict.keys(), keys_list1):
-        mapping[key] = value
+    # sorte indices by count in descending order, most frequent first
+    sorted_indices = non_zero_indices[channel_counts[non_zero_indices].argsort()[::-1]]
 
-    # print the resulting mapping
-    # print(mapping)
+    # return list of sorted data channel values
+    # made into list to facilitate working with dictionary_mapping()
+    return list(sorted_indices)
 
+def dictionary_mapping(source_arr, target_arr):
+    # initialize mapped dict
+    mapped_dict = {}
     
-    for x in range(width):
-        for y in range(height):
-            # accessing and storing hsv image data
-            target_image_data[x, y, data_channel] = mapping[target_image_data[x, y, data_channel]]  # Store hue value 
+    # map source to target
+    if (len(source_arr) >= len(target_arr)):
+        for i in range(0,len(target_arr)):
+            mapped_dict[target_arr[i]] = source_arr[i]
+        return mapped_dict
+    else:
+        # mapping based on the length of source arr
+        for i in range(0,len(source_arr)):
+            mapped_dict[target_arr[i]] = source_arr[i]
+        # finishing the rest of the mapping
+        # from the remaining index from above to the end or the len of array
+        remaining = len(target_arr) - (len(target_arr) - len(source_arr))
+        for i in range(len(target_arr) - (len(target_arr) - len(source_arr)), len(target_arr)):
+            if (i - remaining == len(target_arr) - (len(target_arr) - len(source_arr))):
+                remaining = remaining + len(target_arr) - (len(target_arr) - len(source_arr))
+            
+            mapped_dict[target_arr[i]] = source_arr[i - remaining]
 
-    return target_image_data
+        return mapped_dict
 
+
+
+
+def image_data_swap(data, source_dict, target_dict, data_channel):
+    # get image dimensions
+    height, width = data.shape[:2]
+
+    # get frequent reoccuring values
+    frequent_values = recurring_identify(data, data_channel)
+
+    # create a mapping dictionary with source and target dictionaries
+    mapping = {value: source_dict.get(value, target_dict.get(value, value)) for value in frequent_values}
+
+    # copy of the data to avoid in place modification
+    swapped_data = data.copy()
+
+    # vectorized swapping
+    swapped_data[:, :, data_channel] = np.vectorize(mapping.get)(swapped_data[:, :, data_channel])
+
+    return swapped_data
 
 
 # visualize functions ------------------------------------
