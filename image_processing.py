@@ -70,26 +70,15 @@ def dictionary_mapping(source_arr, target_arr):
 
         return mapped_dict
 
-
-
-
-def image_data_swap(data, source_dict, target_dict, data_channel):
-    # get image dimensions
-    height, width = data.shape[:2]
-
-    # get frequent reoccuring values
-    frequent_values = recurring_identify(data, data_channel)
-
-    # create a mapping dictionary with source and target dictionaries
-    mapping = {value: source_dict.get(value, target_dict.get(value, value)) for value in frequent_values}
-
-    # copy of the data to avoid in place modification
-    swapped_data = data.copy()
-
-    # vectorized swapping
-    swapped_data[:, :, data_channel] = np.vectorize(mapping.get)(swapped_data[:, :, data_channel])
-
-    return swapped_data
+def image_data_swap(data, mapped_dictionary, data_channel):
+    # Iterate over each element in the data array
+    for x in range(len(data)):
+        for y in range(len(data[x])):
+            # Check if the data at data_channel is in the mapped dictionary
+            if data[x][y][data_channel] in mapped_dictionary:
+                # Swap the data using the mapped dictionary
+                data[x][y][data_channel] = mapped_dictionary[data[x][y][data_channel]]
+    return data
 
 
 # visualize functions ------------------------------------
@@ -118,13 +107,10 @@ def visualize_data(hue_channel, saturation_channel, value_channel):
 
     plt.show()
 
-def hsv_bgr(hsv_data):
-    # extracting HSV channels cutting off x & y cords
-    data = hsv_data[:, :, :3] 
-    print(f"Number of channels in new_image: {data.shape[2]}")
-
-    return cv2.cvtColor(data.astype(np.float32), cv2.COLOR_HSV2BGR_FULL)
-
+def hsv_bgr(hsv_image):
+    image = cv2.cvtColor(hsv_image, cv2.COLOR_HSV2BGR)
+    cv2.imshow('image', image)
+    cv2.waitKey(0)
 
 
 # just storing functions ------------------------------------
